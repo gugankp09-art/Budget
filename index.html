@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Ledger India</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>₹</text></svg>">
+<!-- PWA install metadata -->
+<meta name="theme-color" content="#0f1117" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Ledger" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Playfair+Display:wght@800&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#0f1117}
+  body{font-family:'Sora','Segoe UI',sans-serif;color:#eee8d5;-webkit-tap-highlight-color:transparent}
+  ::-webkit-scrollbar{width:0}
+  .pill{cursor:pointer;border:none;outline:none;transition:all .18s;font-family:inherit}
+  .pill:active{transform:scale(.96)}
+  .inp{background:#1a1d27;border:1px solid #2a2d3a;color:#eee8d5;font-family:inherit;
+       font-size:14px;padding:10px 14px;border-radius:6px;width:100%;outline:none;transition:border-color .18s}
+  .inp:focus{border-color:#F4A261}
+  .card{background:#161923;border:1px solid #1f2233;border-radius:10px;padding:16px}
+  .nav{background:none;border:none;cursor:pointer;font-family:inherit;font-size:11px;
+       letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;transition:all .18s}
+  #root{max-width:480px;margin:0 auto;min-height:100vh}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect } = React;
+
+// ── Constants ──────────────────────────────────────────────
+const CATEGORIES = [
+  { id: "housing",       label: "Housing / Rent",   icon: "🏠", color: "#F4A261" },
+  { id: "food",          label: "Food & Groceries", icon: "🥘", color: "#E9C46A" },
+  { id: "transport",     label: "Transport",        icon: "🚌", color: "#57CC99" },
+  { id: "health",        label: "Health",           icon: "💊", color: "#80ED99" },
+  { id: "education",     label: "Education",        icon: "📚", color: "#48CAE4" },
+  { id: "entertainment", label: "Entertainment",    icon: "🎬", color: "#ADB5FF" },
+  { id: "savings",       label: "Savings / SIP",    icon: "🏦", color: "#C77DFF" },
+  { id: "other",         label: "Other",            icon: "📦", color: "#888" },
+];
+
+const fmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+
+function weekOf(day) {
+  if (day <= 7)  return 1;
+  if (day <= 14) return 2;
+  if (day <= 21) return 3;
+  return 4;
+}
+
+function weeksInMonth(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return [
+    { week: 1, label: "Week 1", range: "1–7",   days: 7 },
+    { week: 2, label: "Week 2", range: "8–14",  days: 7 },
+    { week: 3, label: "Week 3", range: "15–21", days: 7 },
+    { week: 4, label: "Week 4", range: `22–${daysInMonth}`, days: daysInMonth - 21 },
+  ];
+}
+
+const NOW = new Date();
+const THIS_YEAR  = NOW.getFullYear();
+const THIS_MONTH = NOW.getMonth();
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+
+const emptyBudgets = () => Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
+
+// ── localStorage helpers ──────────────────────────────────
+const STORAGE_KEY = "ledger_india_v1";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveState(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Could not save:", e);
+  }
+}
+
+function monthKey(year, month) {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
+// ── Component ──────────────────────────────────────────────
+function App() {
+  const saved = loadState() || { budgetsByMonth: {}, transactions: [] };
+
+  const [view, setView]             = useState("plan");
+  const [year, setYear]             = useState(THIS_YEAR);
+  const [month, setMonth]           = useState(THIS_MONTH);
+  const [budgetsByMonth, setBudgetsByMonth] = useState(saved.budgetsByMonth || {});
+  const [transactions, setTx]       = useState(saved.transactions || []);
+  const [budgetInput, setBudgetInput] = useState(
+    saved.budgetsByMonth?.[monthKey(THIS_YEAR, THIS_MONTH)] || emptyBudgets()
+  );
+  const [form, setForm]             = useState({
+    category: "food", amount: "", desc: "",
+    date: NOW.toISOString().slice(0, 10),
+  });
+  const [activeWeek, setActiveWeek] = useState(weekOf(NOW.getDate()));
+
+  const mKey = monthKey(year, month);
+  const budgets = budgetsByMonth[mKey] || emptyBudgets();
+  const budgetSet = Object.values(budgets).some(v => v > 0);
+
+  // Persist on every change
+  useEffect(() => {
+    saveState({ budgetsByMonth, transactions });
+  }, [budgetsByMonth, transactions]);
+
+  // When month changes, load that month's budget draft into the input
+  useEffect(() => {
+    setBudgetInput(budgetsByMonth[mKey] || emptyBudgets());
+    if (!(budgetsByMonth[mKey] && Object.values(budgetsByMonth[mKey]).some(v => v > 0))) {
+      setView("plan");
+    }
+  }, [mKey]);
+
+  const weeks = weeksInMonth(year, month);
+  const totalBudget = useMemo(() => Object.values(budgets).reduce((a, b) => a + b, 0), [budgets]);
+
+  const weeklyAllowance = useMemo(() => {
+    const result = {};
+    weeks.forEach(w => {
+      result[w.week] = {};
+      CATEGORIES.forEach(c => { result[w.week][c.id] = budgets[c.id] / 4; });
+    });
+    return result;
+  }, [budgets, weeks]);
+
+  const monthTx = useMemo(() =>
+    transactions.filter(t => {
+      const d = new Date(t.date + "T00:00:00");
+      return d.getFullYear() === year && d.getMonth() === month;
+    }), [transactions, year, month]);
+
+  const spentBy = useMemo(() => {
+    const byCat  = Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
+    const byWeek = { 1: {}, 2: {}, 3: {}, 4: {} };
+    weeks.forEach(w => CATEGORIES.forEach(c => { byWeek[w.week][c.id] = 0; }));
+    monthTx.forEach(t => {
+      byCat[t.category] += t.amount;
+      const day = new Date(t.date + "T00:00:00").getDate();
+      const wk  = weekOf(day);
+      byWeek[wk][t.category] += t.amount;
+    });
+    return { byCat, byWeek };
+  }, [monthTx, weeks]);
+
+  const totalSpent = useMemo(() => Object.values(spentBy.byCat).reduce((a, b) => a + b, 0), [spentBy]);
+
+  function saveBudget() {
+    const parsed = Object.fromEntries(
+      CATEGORIES.map(c => [c.id, parseFloat(budgetInput[c.id]) || 0])
+    );
+    setBudgetsByMonth(prev => ({ ...prev, [mKey]: parsed }));
+    setView("weekly");
+  }
+
+  function addTx() {
+    if (!form.amount || !form.desc) return;
+    setTx(prev => [
+      { id: Date.now(), ...form, amount: parseFloat(form.amount) },
+      ...prev,
+    ]);
+    setForm(f => ({ ...f, amount: "", desc: "" }));
+  }
+
+  function deleteTx(id) {
+    setTx(prev => prev.filter(x => x.id !== id));
+  }
+
+  const prevMonth = () => {
+    if (month === 0) { setYear(y => y - 1); setMonth(11); }
+    else setMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (month === 11) { setYear(y => y + 1); setMonth(0); }
+    else setMonth(m => m + 1);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#0f1117" }}>
+      {/* Header */}
+      <div style={{ padding: "24px 20px 0", borderBottom: "1px solid #1a1d27" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <button className="pill" onClick={prevMonth}
+            style={{ background: "#1a1d27", color: "#888", width: 32, height: 32, borderRadius: 6, fontSize: 18 }}>‹</button>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 800, color: "#F4A261", lineHeight: 1 }}>
+              {MONTH_NAMES[month]}
+            </div>
+            <div style={{ fontSize: 11, color: "#555", letterSpacing: ".2em" }}>{year}</div>
+          </div>
+          <button className="pill" onClick={nextMonth}
+            style={{ background: "#1a1d27", color: "#888", width: 32, height: 32, borderRadius: 6, fontSize: 18 }}>›</button>
+        </div>
+        <div style={{ display: "flex", gap: 2, marginTop: 14 }}>
+          {[["plan","📋 Plan"],["weekly","📅 Weekly"],["log","💸 Expenses"]].map(([v, l]) => (
+            <button key={v} className="nav"
+              style={{ color: view === v ? "#F4A261" : "#555", borderBottom: view === v ? "2px solid #F4A261" : "2px solid transparent", fontSize: 12 }}
+              onClick={() => setView(v)}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+
+        {/* PLAN */}
+        {view === "plan" && (
+          <>
+            <div style={{ fontSize: 12, color: "#555", letterSpacing: ".15em" }}>SET YOUR MONTHLY BUDGET</div>
+            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+              Enter your total budget for each category for <b style={{ color: "#eee8d5" }}>{MONTH_NAMES[month]} {year}</b>. The system auto-splits into 4 weeks for you.
+            </div>
+
+            {CATEGORIES.map(cat => (
+              <div key={cat.id} className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22, width: 30, textAlign: "center", flexShrink: 0 }}>{cat.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: "#eee8d5", marginBottom: 6 }}>{cat.label}</div>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRight: "none", padding: "9px 10px", borderRadius: "6px 0 0 6px", fontSize: 14, color: "#F4A261" }}>₹</span>
+                    <input className="inp" type="number" inputMode="decimal" style={{ borderRadius: "0 6px 6px 0", borderLeft: "none" }}
+                      placeholder="0"
+                      value={budgetInput[cat.id] || ""}
+                      onChange={e => setBudgetInput(b => ({ ...b, [cat.id]: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "14px 16px", background: "#1a1d27", borderRadius: 8, border: "1px solid #2a2d3a" }}>
+              <span style={{ fontSize: 12, color: "#888", letterSpacing: ".1em" }}>TOTAL MONTHLY BUDGET</span>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#F4A261" }}>
+                ₹{Math.round(Object.values(budgetInput).reduce((a, v) => a + (parseFloat(v) || 0), 0)).toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            <button className="pill" onClick={saveBudget}
+              style={{ background: "#F4A261", color: "#0f1117", padding: "14px", borderRadius: 8,
+                fontSize: 13, fontWeight: 700, letterSpacing: ".08em", width: "100%" }}>
+              ✅ CONFIRM BUDGET & SEE WEEKLY PLAN
+            </button>
+          </>
+        )}
+
+        {/* WEEKLY */}
+        {view === "weekly" && (
+          <>
+            {!budgetSet ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#555" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+                <div style={{ fontSize: 14 }}>Please set your monthly budget first</div>
+                <button className="pill" onClick={() => setView("plan")}
+                  style={{ marginTop: 16, background: "#F4A261", color: "#0f1117", padding: "10px 24px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                  Go to Plan
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="card" style={{ background: "#1a1d27" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>MONTH BUDGET</div>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#F4A261" }}>{fmt(totalBudget)}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>SPENT SO FAR</div>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: totalSpent > totalBudget ? "#E84747" : "#eee8d5" }}>{fmt(totalSpent)}</div>
+                    </div>
+                  </div>
+                  <div style={{ height: 6, background: "#0f1117", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 3, background: totalSpent > totalBudget ? "#E84747" : "#F4A261",
+                      width: `${Math.min(totalSpent / totalBudget * 100, 100)}%`, transition: "width .6s" }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: "#888", marginTop: 6, textAlign: "right" }}>
+                    {fmt(totalBudget - totalSpent)} remaining
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 6 }}>
+                  {weeks.map(w => {
+                    const wSpent = CATEGORIES.reduce((a, c) => a + (spentBy.byWeek[w.week][c.id] || 0), 0);
+                    const wAllow = CATEGORIES.reduce((a, c) => a + (weeklyAllowance[w.week][c.id] || 0), 0);
+                    const over   = wSpent > wAllow;
+                    return (
+                      <button key={w.week} className="pill" onClick={() => setActiveWeek(w.week)}
+                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8,
+                          background: activeWeek === w.week ? "#F4A261" : "#161923",
+                          color: activeWeek === w.week ? "#0f1117" : (over ? "#E84747" : "#888"),
+                          border: `1px solid ${activeWeek === w.week ? "#F4A261" : over ? "#E84747" : "#1f2233"}`,
+                          fontSize: 11, fontWeight: activeWeek === w.week ? 700 : 400 }}>
+                        <div>{w.label}</div>
+                        <div style={{ fontSize: 10, marginTop: 2, opacity: .8 }}>{w.range}</div>
+                        {over && <div style={{ fontSize: 9, color: activeWeek === w.week ? "#c0392b" : "#E84747", marginTop: 1 }}>OVER</div>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {(() => {
+                  const wAllow = weeklyAllowance[activeWeek];
+                  const wSpent = spentBy.byWeek[activeWeek];
+                  const wTotal = CATEGORIES.reduce((a, c) => a + (wAllow[c.id] || 0), 0);
+                  const wTotalSpent = CATEGORIES.reduce((a, c) => a + (wSpent[c.id] || 0), 0);
+                  return (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#555", letterSpacing: ".12em" }}>
+                          WEEK {activeWeek} ALLOWANCE
+                        </span>
+                        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#F4A261" }}>{fmt(wTotal)}</span>
+                      </div>
+
+                      {CATEGORIES.map(cat => {
+                        const allow = wAllow[cat.id] || 0;
+                        const spent = wSpent[cat.id] || 0;
+                        const pct   = allow > 0 ? Math.min(spent / allow, 1) : 0;
+                        const over  = spent > allow;
+                        return (
+                          <div key={cat.id} className="card" style={{ padding: "12px 14px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 16 }}>{cat.icon}</span>
+                                <span style={{ fontSize: 13, color: "#eee8d5" }}>{cat.label}</span>
+                              </div>
+                              <div style={{ textAlign: "right" }}>
+                                <span style={{ fontSize: 13, color: over ? "#E84747" : cat.color, fontWeight: 600 }}>
+                                  {fmt(spent)}
+                                </span>
+                                <span style={{ fontSize: 11, color: "#444" }}> / {fmt(allow)}</span>
+                              </div>
+                            </div>
+                            <div style={{ height: 4, background: "#0f1117", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ height: "100%", borderRadius: 2, background: over ? "#E84747" : cat.color,
+                                width: `${pct * 100}%`, transition: "width .5s" }} />
+                            </div>
+                            {over && (
+                              <div style={{ fontSize: 11, color: "#E84747", marginTop: 4 }}>
+                                ⚠ Over by {fmt(spent - allow)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 4px", borderTop: "1px solid #1a1d27" }}>
+                        <span style={{ fontSize: 12, color: wTotalSpent > wTotal ? "#E84747" : "#888" }}>
+                          {wTotalSpent > wTotal ? "⚠ Over this week by " + fmt(wTotalSpent - wTotal) : "Week balance: " + fmt(wTotal - wTotalSpent)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </>
+        )}
+
+        {/* LOG */}
+        {view === "log" && (
+          <>
+            <div className="card">
+              <div style={{ fontSize: 11, color: "#555", letterSpacing: ".15em", marginBottom: 14 }}>LOG AN EXPENSE</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <select className="inp" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+                </select>
+                <div style={{ display: "flex" }}>
+                  <span style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRight: "none",
+                    padding: "9px 10px", borderRadius: "6px 0 0 6px", fontSize: 14, color: "#F4A261" }}>₹</span>
+                  <input className="inp" type="number" inputMode="decimal" style={{ borderRadius: "0 6px 6px 0", borderLeft: "none" }}
+                    placeholder="Amount" value={form.amount}
+                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
+                </div>
+                <input className="inp" type="text" placeholder="Description (e.g. BigBasket order)"
+                  value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
+                  onKeyDown={e => e.key === "Enter" && addTx()} />
+                <input className="inp" type="date" value={form.date}
+                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+                <button className="pill" onClick={addTx}
+                  style={{ background: "#F4A261", color: "#0f1117", padding: "12px", borderRadius: 8,
+                    fontSize: 13, fontWeight: 700, letterSpacing: ".08em" }}>
+                  + ADD EXPENSE
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: "#1a1d27", borderRadius: 8, padding: "12px 14px", borderLeft: "3px solid #57CC99",
+              fontSize: 12, color: "#888", lineHeight: 1.6 }}>
+              🔔 <b style={{ color: "#57CC99" }}>Reminder set</b> — every Sunday at 7:00 PM, update your expenses here.
+            </div>
+
+            {monthTx.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 0", color: "#444", fontSize: 13 }}>
+                No expenses logged for {MONTH_NAMES[month]} yet
+              </div>
+            ) : (
+              weeks.map(w => {
+                const wTx = monthTx.filter(t => weekOf(new Date(t.date + "T00:00:00").getDate()) === w.week);
+                if (wTx.length === 0) return null;
+                const wTotal = wTx.reduce((a, t) => a + t.amount, 0);
+                return (
+                  <div key={w.week}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+                      marginBottom: 8, padding: "0 4px" }}>
+                      <span style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>
+                        {w.label.toUpperCase()} ({w.range})
+                      </span>
+                      <span style={{ fontSize: 13, color: "#F4A261", fontFamily: "'Playfair Display', serif" }}>{fmt(wTotal)}</span>
+                    </div>
+                    {wTx.map(t => {
+                      const cat = CATEGORIES.find(c => c.id === t.category);
+                      return (
+                        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12,
+                          padding: "11px 14px", background: "#161923", borderRadius: 8,
+                          border: "1px solid #1f2233", marginBottom: 6 }}>
+                          <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{cat?.icon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, color: "#eee8d5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc}</div>
+                            <div style={{ fontSize: 11, color: "#444", marginTop: 1 }}>{cat?.label} · {t.date}</div>
+                          </div>
+                          <div style={{ fontSize: 15, color: cat?.color, fontWeight: 600, flexShrink: 0 }}>{fmt(t.amount)}</div>
+                          <button className="pill" onClick={() => deleteTx(t.id)}
+                            style={{ background: "none", color: "#333", fontSize: 16, padding: "0 4px" }}>✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
