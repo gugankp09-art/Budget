@@ -4,467 +4,460 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Ledger India</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>₹</text></svg>">
-<!-- PWA install metadata -->
 <meta name="theme-color" content="#0f1117" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Ledger" />
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Playfair+Display:wght@800&display=swap" rel="stylesheet">
-
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:#0f1117}
-  body{font-family:'Sora','Segoe UI',sans-serif;color:#eee8d5;-webkit-tap-highlight-color:transparent}
+  body{font-family:Georgia,'Segoe UI',sans-serif;color:#eee8d5;-webkit-tap-highlight-color:transparent}
   ::-webkit-scrollbar{width:0}
-  .pill{cursor:pointer;border:none;outline:none;transition:all .18s;font-family:inherit}
-  .pill:active{transform:scale(.96)}
-  .inp{background:#1a1d27;border:1px solid #2a2d3a;color:#eee8d5;font-family:inherit;
-       font-size:14px;padding:10px 14px;border-radius:6px;width:100%;outline:none;transition:border-color .18s}
-  .inp:focus{border-color:#F4A261}
+  #app{max-width:480px;margin:0 auto;min-height:100vh}
+  .header{padding:24px 20px 0;border-bottom:1px solid #1a1d27}
+  .month-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .month-btn{background:#1a1d27;color:#888;width:32px;height:32px;border-radius:6px;font-size:18px;border:none;cursor:pointer}
+  .month-title{text-align:center}
+  .month-name{font-size:28px;font-weight:800;color:#F4A261;line-height:1}
+  .month-year{font-size:11px;color:#555;letter-spacing:.2em}
+  .navbar{display:flex;gap:2px;margin-top:14px}
+  .nav-btn{background:none;border:none;cursor:pointer;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    padding:8px 14px;color:#555;border-bottom:2px solid transparent}
+  .nav-btn.active{color:#F4A261;border-bottom:2px solid #F4A261}
+  .content{padding:20px 16px;display:flex;flex-direction:column;gap:14px}
   .card{background:#161923;border:1px solid #1f2233;border-radius:10px;padding:16px}
-  .nav{background:none;border:none;cursor:pointer;font-family:inherit;font-size:11px;
-       letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;transition:all .18s}
-  #root{max-width:480px;margin:0 auto;min-height:100vh}
+  .section-label{font-size:12px;color:#555;letter-spacing:.15em}
+  .helper-text{font-size:13px;color:#888;line-height:1.6}
+  .cat-row{display:flex;align-items:center;gap:12px}
+  .cat-icon{font-size:22px;width:30px;text-align:center;flex-shrink:0}
+  .cat-name{font-size:13px;color:#eee8d5;margin-bottom:6px}
+  .inp-group{display:flex;align-items:center}
+  .rupee{background:#1a1d27;border:1px solid #2a2d3a;border-right:none;padding:9px 10px;
+    border-radius:6px 0 0 6px;font-size:14px;color:#F4A261}
+  .inp{background:#1a1d27;border:1px solid #2a2d3a;color:#eee8d5;font-size:14px;padding:10px 14px;
+    border-radius:0 6px 6px 0;border-left:none;width:100%;outline:none}
+  .inp:focus{border-color:#F4A261}
+  .inp-full{border-radius:6px;border:1px solid #2a2d3a}
+  .inp-full:focus{border-color:#F4A261}
+  select.inp-full{appearance:none}
+  .total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;
+    background:#1a1d27;border-radius:8px;border:1px solid #2a2d3a}
+  .total-label{font-size:12px;color:#888;letter-spacing:.1em}
+  .total-value{font-size:22px;color:#F4A261;font-weight:bold}
+  .btn-primary{background:#F4A261;color:#0f1117;padding:14px;border-radius:8px;font-size:13px;
+    font-weight:700;letter-spacing:.08em;width:100%;border:none;cursor:pointer}
+  .btn-primary:active{transform:scale(.98)}
+  .empty-state{text-align:center;padding:40px 0;color:#555}
+  .empty-icon{font-size:36px;margin-bottom:12px}
+  .btn-secondary{margin-top:16px;background:#F4A261;color:#0f1117;padding:10px 24px;border-radius:6px;
+    font-size:12px;font-weight:600;border:none;cursor:pointer}
+  .summary-card{background:#1a1d27}
+  .summary-grid{display:flex;justify-content:space-between;margin-bottom:10px}
+  .summary-sub{font-size:11px;color:#555;letter-spacing:.12em}
+  .summary-big{font-size:24px;font-weight:bold;color:#F4A261}
+  .progress-track{height:6px;background:#0f1117;border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:3px;background:#F4A261;transition:width .6s}
+  .remaining-note{font-size:11px;color:#888;margin-top:6px;text-align:right}
+  .week-tabs{display:flex;gap:6px}
+  .week-tab{flex:1;padding:8px 4px;border-radius:8px;background:#161923;color:#888;
+    border:1px solid #1f2233;font-size:11px;cursor:pointer;text-align:center}
+  .week-tab.active{background:#F4A261;color:#0f1117;border-color:#F4A261;font-weight:700}
+  .week-tab.over{color:#E84747;border-color:#E84747}
+  .week-tab .range{font-size:10px;margin-top:2px;opacity:.8}
+  .week-tab .over-label{font-size:9px;margin-top:1px}
+  .week-header{display:flex;justify-content:space-between;align-items:center}
+  .week-alloc{font-size:18px;color:#F4A261;font-weight:bold}
+  .cat-card{padding:12px 14px}
+  .cat-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .cat-card-left{display:flex;align-items:center;gap:8px}
+  .cat-spent{font-weight:600}
+  .cat-budget{font-size:11px;color:#444}
+  .mini-track{height:4px;background:#0f1117;border-radius:2px;overflow:hidden}
+  .mini-fill{height:100%;border-radius:2px;transition:width .5s}
+  .over-note{font-size:11px;color:#E84747;margin-top:4px}
+  .week-balance{display:flex;justify-content:space-between;padding:12px 4px;border-top:1px solid #1a1d27}
+  .reminder-box{background:#1a1d27;border-radius:8px;padding:12px 14px;border-left:3px solid #57CC99;
+    font-size:12px;color:#888;line-height:1.6}
+  .week-group-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 4px}
+  .week-group-label{font-size:11px;color:#555;letter-spacing:.12em}
+  .week-group-total{font-size:13px;color:#F4A261;font-weight:bold}
+  .tx-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:#161923;border-radius:8px;
+    border:1px solid #1f2233;margin-bottom:6px}
+  .tx-icon{font-size:18px;width:24px;text-align:center}
+  .tx-info{flex:1;min-width:0}
+  .tx-desc{font-size:13px;color:#eee8d5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tx-meta{font-size:11px;color:#444;margin-top:1px}
+  .tx-amount{font-size:15px;font-weight:600;flex-shrink:0}
+  .tx-delete{background:none;border:none;color:#333;font-size:16px;padding:0 4px;cursor:pointer}
+  .no-tx{text-align:center;padding:32px 0;color:#444;font-size:13px}
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useMemo, useEffect } = React;
-
+<script>
 // ── Constants ──────────────────────────────────────────────
-const CATEGORIES = [
-  { id: "housing",       label: "Housing / Rent",   icon: "🏠", color: "#F4A261" },
-  { id: "food",          label: "Food & Groceries", icon: "🥘", color: "#E9C46A" },
-  { id: "transport",     label: "Transport",        icon: "🚌", color: "#57CC99" },
-  { id: "health",        label: "Health",           icon: "💊", color: "#80ED99" },
-  { id: "education",     label: "Education",        icon: "📚", color: "#48CAE4" },
-  { id: "entertainment", label: "Entertainment",    icon: "🎬", color: "#ADB5FF" },
-  { id: "savings",       label: "Savings / SIP",    icon: "🏦", color: "#C77DFF" },
-  { id: "other",         label: "Other",            icon: "📦", color: "#888" },
+var CATEGORIES = [
+  { id: "housing",       label: "Housing / Rent",   icon: "\ud83c\udfe0", color: "#F4A261" },
+  { id: "food",          label: "Food & Groceries", icon: "\ud83c\udf58", color: "#E9C46A" },
+  { id: "transport",     label: "Transport",        icon: "\ud83d\ude8c", color: "#57CC99" },
+  { id: "health",        label: "Health",           icon: "\ud83d\udc8a", color: "#80ED99" },
+  { id: "education",     label: "Education",        icon: "\ud83d\udcda", color: "#48CAE4" },
+  { id: "entertainment", label: "Entertainment",    icon: "\ud83c\udfac", color: "#ADB5FF" },
+  { id: "savings",       label: "Savings / SIP",    icon: "\ud83c\udfe6", color: "#C77DFF" },
+  { id: "other",         label: "Other",            icon: "\ud83d\udce6", color: "#888" }
 ];
 
-const fmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+var MONTH_NAMES = ["January","February","March","April","May","June",
+                   "July","August","September","October","November","December"];
+
+var STORAGE_KEY = "ledger_india_v1";
+var NOW = new Date();
+
+// ── State ──────────────────────────────────────────────────
+var state = {
+  view: "plan",
+  year: NOW.getFullYear(),
+  month: NOW.getMonth(),
+  budgetsByMonth: {},
+  transactions: [],
+  budgetInput: {},
+  form: { category: "food", amount: "", desc: "", date: isoDate(NOW) },
+  activeWeek: weekOf(NOW.getDate())
+};
+
+function isoDate(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, "0");
+  var day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function emptyBudgets() {
+  var b = {};
+  CATEGORIES.forEach(function(c) { b[c.id] = 0; });
+  return b;
+}
+
+function fmt(n) {
+  return "\u20b9" + Math.round(n).toLocaleString("en-IN");
+}
 
 function weekOf(day) {
-  if (day <= 7)  return 1;
+  if (day <= 7) return 1;
   if (day <= 14) return 2;
   if (day <= 21) return 3;
   return 4;
 }
 
+function monthKey(year, month) {
+  return year + "-" + String(month + 1).padStart(2, "0");
+}
+
 function weeksInMonth(year, month) {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
   return [
-    { week: 1, label: "Week 1", range: "1–7",   days: 7 },
-    { week: 2, label: "Week 2", range: "8–14",  days: 7 },
-    { week: 3, label: "Week 3", range: "15–21", days: 7 },
-    { week: 4, label: "Week 4", range: `22–${daysInMonth}`, days: daysInMonth - 21 },
+    { week: 1, label: "Week 1", range: "1\u20137",   days: 7 },
+    { week: 2, label: "Week 2", range: "8\u201314",  days: 7 },
+    { week: 3, label: "Week 3", range: "15\u201321", days: 7 },
+    { week: 4, label: "Week 4", range: "22\u2013" + daysInMonth, days: daysInMonth - 21 }
   ];
 }
 
-const NOW = new Date();
-const THIS_YEAR  = NOW.getFullYear();
-const THIS_MONTH = NOW.getMonth();
-const MONTH_NAMES = ["January","February","March","April","May","June",
-                     "July","August","September","October","November","December"];
-
-const emptyBudgets = () => Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
-
-// ── localStorage helpers ──────────────────────────────────
-const STORAGE_KEY = "ledger_india_v1";
-
+// ── Persistence ────────────────────────────────────────────
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
-function saveState(state) {
+function persist() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    console.error("Could not save:", e);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      budgetsByMonth: state.budgetsByMonth,
+      transactions: state.transactions
+    }));
+  } catch (e) { console.error("save failed", e); }
+}
+
+(function init() {
+  var saved = loadState();
+  if (saved) {
+    state.budgetsByMonth = saved.budgetsByMonth || {};
+    state.transactions = saved.transactions || [];
   }
+  var mKey = monthKey(state.year, state.month);
+  state.budgetInput = Object.assign({}, state.budgetsByMonth[mKey] || emptyBudgets());
+  var hasBudget = Object.values(state.budgetInput).some(function(v) { return v > 0; });
+  state.view = hasBudget ? "weekly" : "plan";
+})();
+
+// ── Derived data helpers ──────────────────────────────────
+function getBudgets() {
+  var mKey = monthKey(state.year, state.month);
+  return state.budgetsByMonth[mKey] || emptyBudgets();
 }
 
-function monthKey(year, month) {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
+function isBudgetSet() {
+  var b = getBudgets();
+  return Object.values(b).some(function(v) { return v > 0; });
 }
 
-// ── Component ──────────────────────────────────────────────
-function App() {
-  const saved = loadState() || { budgetsByMonth: {}, transactions: [] };
-
-  const [view, setView]             = useState("plan");
-  const [year, setYear]             = useState(THIS_YEAR);
-  const [month, setMonth]           = useState(THIS_MONTH);
-  const [budgetsByMonth, setBudgetsByMonth] = useState(saved.budgetsByMonth || {});
-  const [transactions, setTx]       = useState(saved.transactions || []);
-  const [budgetInput, setBudgetInput] = useState(
-    saved.budgetsByMonth?.[monthKey(THIS_YEAR, THIS_MONTH)] || emptyBudgets()
-  );
-  const [form, setForm]             = useState({
-    category: "food", amount: "", desc: "",
-    date: NOW.toISOString().slice(0, 10),
+function getMonthTx() {
+  return state.transactions.filter(function(t) {
+    var d = new Date(t.date + "T00:00:00");
+    return d.getFullYear() === state.year && d.getMonth() === state.month;
   });
-  const [activeWeek, setActiveWeek] = useState(weekOf(NOW.getDate()));
-
-  const mKey = monthKey(year, month);
-  const budgets = budgetsByMonth[mKey] || emptyBudgets();
-  const budgetSet = Object.values(budgets).some(v => v > 0);
-
-  // Persist on every change
-  useEffect(() => {
-    saveState({ budgetsByMonth, transactions });
-  }, [budgetsByMonth, transactions]);
-
-  // When month changes, load that month's budget draft into the input
-  useEffect(() => {
-    setBudgetInput(budgetsByMonth[mKey] || emptyBudgets());
-    if (!(budgetsByMonth[mKey] && Object.values(budgetsByMonth[mKey]).some(v => v > 0))) {
-      setView("plan");
-    }
-  }, [mKey]);
-
-  const weeks = weeksInMonth(year, month);
-  const totalBudget = useMemo(() => Object.values(budgets).reduce((a, b) => a + b, 0), [budgets]);
-
-  const weeklyAllowance = useMemo(() => {
-    const result = {};
-    weeks.forEach(w => {
-      result[w.week] = {};
-      CATEGORIES.forEach(c => { result[w.week][c.id] = budgets[c.id] / 4; });
-    });
-    return result;
-  }, [budgets, weeks]);
-
-  const monthTx = useMemo(() =>
-    transactions.filter(t => {
-      const d = new Date(t.date + "T00:00:00");
-      return d.getFullYear() === year && d.getMonth() === month;
-    }), [transactions, year, month]);
-
-  const spentBy = useMemo(() => {
-    const byCat  = Object.fromEntries(CATEGORIES.map(c => [c.id, 0]));
-    const byWeek = { 1: {}, 2: {}, 3: {}, 4: {} };
-    weeks.forEach(w => CATEGORIES.forEach(c => { byWeek[w.week][c.id] = 0; }));
-    monthTx.forEach(t => {
-      byCat[t.category] += t.amount;
-      const day = new Date(t.date + "T00:00:00").getDate();
-      const wk  = weekOf(day);
-      byWeek[wk][t.category] += t.amount;
-    });
-    return { byCat, byWeek };
-  }, [monthTx, weeks]);
-
-  const totalSpent = useMemo(() => Object.values(spentBy.byCat).reduce((a, b) => a + b, 0), [spentBy]);
-
-  function saveBudget() {
-    const parsed = Object.fromEntries(
-      CATEGORIES.map(c => [c.id, parseFloat(budgetInput[c.id]) || 0])
-    );
-    setBudgetsByMonth(prev => ({ ...prev, [mKey]: parsed }));
-    setView("weekly");
-  }
-
-  function addTx() {
-    if (!form.amount || !form.desc) return;
-    setTx(prev => [
-      { id: Date.now(), ...form, amount: parseFloat(form.amount) },
-      ...prev,
-    ]);
-    setForm(f => ({ ...f, amount: "", desc: "" }));
-  }
-
-  function deleteTx(id) {
-    setTx(prev => prev.filter(x => x.id !== id));
-  }
-
-  const prevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#0f1117" }}>
-      {/* Header */}
-      <div style={{ padding: "24px 20px 0", borderBottom: "1px solid #1a1d27" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <button className="pill" onClick={prevMonth}
-            style={{ background: "#1a1d27", color: "#888", width: 32, height: 32, borderRadius: 6, fontSize: 18 }}>‹</button>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 800, color: "#F4A261", lineHeight: 1 }}>
-              {MONTH_NAMES[month]}
-            </div>
-            <div style={{ fontSize: 11, color: "#555", letterSpacing: ".2em" }}>{year}</div>
-          </div>
-          <button className="pill" onClick={nextMonth}
-            style={{ background: "#1a1d27", color: "#888", width: 32, height: 32, borderRadius: 6, fontSize: 18 }}>›</button>
-        </div>
-        <div style={{ display: "flex", gap: 2, marginTop: 14 }}>
-          {[["plan","📋 Plan"],["weekly","📅 Weekly"],["log","💸 Expenses"]].map(([v, l]) => (
-            <button key={v} className="nav"
-              style={{ color: view === v ? "#F4A261" : "#555", borderBottom: view === v ? "2px solid #F4A261" : "2px solid transparent", fontSize: 12 }}
-              onClick={() => setView(v)}>{l}</button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-
-        {/* PLAN */}
-        {view === "plan" && (
-          <>
-            <div style={{ fontSize: 12, color: "#555", letterSpacing: ".15em" }}>SET YOUR MONTHLY BUDGET</div>
-            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
-              Enter your total budget for each category for <b style={{ color: "#eee8d5" }}>{MONTH_NAMES[month]} {year}</b>. The system auto-splits into 4 weeks for you.
-            </div>
-
-            {CATEGORIES.map(cat => (
-              <div key={cat.id} className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 22, width: 30, textAlign: "center", flexShrink: 0 }}>{cat.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "#eee8d5", marginBottom: 6 }}>{cat.label}</div>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRight: "none", padding: "9px 10px", borderRadius: "6px 0 0 6px", fontSize: 14, color: "#F4A261" }}>₹</span>
-                    <input className="inp" type="number" inputMode="decimal" style={{ borderRadius: "0 6px 6px 0", borderLeft: "none" }}
-                      placeholder="0"
-                      value={budgetInput[cat.id] || ""}
-                      onChange={e => setBudgetInput(b => ({ ...b, [cat.id]: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "14px 16px", background: "#1a1d27", borderRadius: 8, border: "1px solid #2a2d3a" }}>
-              <span style={{ fontSize: 12, color: "#888", letterSpacing: ".1em" }}>TOTAL MONTHLY BUDGET</span>
-              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#F4A261" }}>
-                ₹{Math.round(Object.values(budgetInput).reduce((a, v) => a + (parseFloat(v) || 0), 0)).toLocaleString("en-IN")}
-              </span>
-            </div>
-
-            <button className="pill" onClick={saveBudget}
-              style={{ background: "#F4A261", color: "#0f1117", padding: "14px", borderRadius: 8,
-                fontSize: 13, fontWeight: 700, letterSpacing: ".08em", width: "100%" }}>
-              ✅ CONFIRM BUDGET & SEE WEEKLY PLAN
-            </button>
-          </>
-        )}
-
-        {/* WEEKLY */}
-        {view === "weekly" && (
-          <>
-            {!budgetSet ? (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "#555" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-                <div style={{ fontSize: 14 }}>Please set your monthly budget first</div>
-                <button className="pill" onClick={() => setView("plan")}
-                  style={{ marginTop: 16, background: "#F4A261", color: "#0f1117", padding: "10px 24px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                  Go to Plan
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="card" style={{ background: "#1a1d27" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>MONTH BUDGET</div>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#F4A261" }}>{fmt(totalBudget)}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>SPENT SO FAR</div>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: totalSpent > totalBudget ? "#E84747" : "#eee8d5" }}>{fmt(totalSpent)}</div>
-                    </div>
-                  </div>
-                  <div style={{ height: 6, background: "#0f1117", borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 3, background: totalSpent > totalBudget ? "#E84747" : "#F4A261",
-                      width: `${Math.min(totalSpent / totalBudget * 100, 100)}%`, transition: "width .6s" }} />
-                  </div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 6, textAlign: "right" }}>
-                    {fmt(totalBudget - totalSpent)} remaining
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 6 }}>
-                  {weeks.map(w => {
-                    const wSpent = CATEGORIES.reduce((a, c) => a + (spentBy.byWeek[w.week][c.id] || 0), 0);
-                    const wAllow = CATEGORIES.reduce((a, c) => a + (weeklyAllowance[w.week][c.id] || 0), 0);
-                    const over   = wSpent > wAllow;
-                    return (
-                      <button key={w.week} className="pill" onClick={() => setActiveWeek(w.week)}
-                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8,
-                          background: activeWeek === w.week ? "#F4A261" : "#161923",
-                          color: activeWeek === w.week ? "#0f1117" : (over ? "#E84747" : "#888"),
-                          border: `1px solid ${activeWeek === w.week ? "#F4A261" : over ? "#E84747" : "#1f2233"}`,
-                          fontSize: 11, fontWeight: activeWeek === w.week ? 700 : 400 }}>
-                        <div>{w.label}</div>
-                        <div style={{ fontSize: 10, marginTop: 2, opacity: .8 }}>{w.range}</div>
-                        {over && <div style={{ fontSize: 9, color: activeWeek === w.week ? "#c0392b" : "#E84747", marginTop: 1 }}>OVER</div>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {(() => {
-                  const wAllow = weeklyAllowance[activeWeek];
-                  const wSpent = spentBy.byWeek[activeWeek];
-                  const wTotal = CATEGORIES.reduce((a, c) => a + (wAllow[c.id] || 0), 0);
-                  const wTotalSpent = CATEGORIES.reduce((a, c) => a + (wSpent[c.id] || 0), 0);
-                  return (
-                    <>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#555", letterSpacing: ".12em" }}>
-                          WEEK {activeWeek} ALLOWANCE
-                        </span>
-                        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#F4A261" }}>{fmt(wTotal)}</span>
-                      </div>
-
-                      {CATEGORIES.map(cat => {
-                        const allow = wAllow[cat.id] || 0;
-                        const spent = wSpent[cat.id] || 0;
-                        const pct   = allow > 0 ? Math.min(spent / allow, 1) : 0;
-                        const over  = spent > allow;
-                        return (
-                          <div key={cat.id} className="card" style={{ padding: "12px 14px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ fontSize: 16 }}>{cat.icon}</span>
-                                <span style={{ fontSize: 13, color: "#eee8d5" }}>{cat.label}</span>
-                              </div>
-                              <div style={{ textAlign: "right" }}>
-                                <span style={{ fontSize: 13, color: over ? "#E84747" : cat.color, fontWeight: 600 }}>
-                                  {fmt(spent)}
-                                </span>
-                                <span style={{ fontSize: 11, color: "#444" }}> / {fmt(allow)}</span>
-                              </div>
-                            </div>
-                            <div style={{ height: 4, background: "#0f1117", borderRadius: 2, overflow: "hidden" }}>
-                              <div style={{ height: "100%", borderRadius: 2, background: over ? "#E84747" : cat.color,
-                                width: `${pct * 100}%`, transition: "width .5s" }} />
-                            </div>
-                            {over && (
-                              <div style={{ fontSize: 11, color: "#E84747", marginTop: 4 }}>
-                                ⚠ Over by {fmt(spent - allow)}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 4px", borderTop: "1px solid #1a1d27" }}>
-                        <span style={{ fontSize: 12, color: wTotalSpent > wTotal ? "#E84747" : "#888" }}>
-                          {wTotalSpent > wTotal ? "⚠ Over this week by " + fmt(wTotalSpent - wTotal) : "Week balance: " + fmt(wTotal - wTotalSpent)}
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </>
-            )}
-          </>
-        )}
-
-        {/* LOG */}
-        {view === "log" && (
-          <>
-            <div className="card">
-              <div style={{ fontSize: 11, color: "#555", letterSpacing: ".15em", marginBottom: 14 }}>LOG AN EXPENSE</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <select className="inp" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
-                </select>
-                <div style={{ display: "flex" }}>
-                  <span style={{ background: "#1a1d27", border: "1px solid #2a2d3a", borderRight: "none",
-                    padding: "9px 10px", borderRadius: "6px 0 0 6px", fontSize: 14, color: "#F4A261" }}>₹</span>
-                  <input className="inp" type="number" inputMode="decimal" style={{ borderRadius: "0 6px 6px 0", borderLeft: "none" }}
-                    placeholder="Amount" value={form.amount}
-                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
-                </div>
-                <input className="inp" type="text" placeholder="Description (e.g. BigBasket order)"
-                  value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
-                  onKeyDown={e => e.key === "Enter" && addTx()} />
-                <input className="inp" type="date" value={form.date}
-                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-                <button className="pill" onClick={addTx}
-                  style={{ background: "#F4A261", color: "#0f1117", padding: "12px", borderRadius: 8,
-                    fontSize: 13, fontWeight: 700, letterSpacing: ".08em" }}>
-                  + ADD EXPENSE
-                </button>
-              </div>
-            </div>
-
-            <div style={{ background: "#1a1d27", borderRadius: 8, padding: "12px 14px", borderLeft: "3px solid #57CC99",
-              fontSize: 12, color: "#888", lineHeight: 1.6 }}>
-              🔔 <b style={{ color: "#57CC99" }}>Reminder set</b> — every Sunday at 7:00 PM, update your expenses here.
-            </div>
-
-            {monthTx.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 0", color: "#444", fontSize: 13 }}>
-                No expenses logged for {MONTH_NAMES[month]} yet
-              </div>
-            ) : (
-              weeks.map(w => {
-                const wTx = monthTx.filter(t => weekOf(new Date(t.date + "T00:00:00").getDate()) === w.week);
-                if (wTx.length === 0) return null;
-                const wTotal = wTx.reduce((a, t) => a + t.amount, 0);
-                return (
-                  <div key={w.week}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                      marginBottom: 8, padding: "0 4px" }}>
-                      <span style={{ fontSize: 11, color: "#555", letterSpacing: ".12em" }}>
-                        {w.label.toUpperCase()} ({w.range})
-                      </span>
-                      <span style={{ fontSize: 13, color: "#F4A261", fontFamily: "'Playfair Display', serif" }}>{fmt(wTotal)}</span>
-                    </div>
-                    {wTx.map(t => {
-                      const cat = CATEGORIES.find(c => c.id === t.category);
-                      return (
-                        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12,
-                          padding: "11px 14px", background: "#161923", borderRadius: 8,
-                          border: "1px solid #1f2233", marginBottom: 6 }}>
-                          <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{cat?.icon}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, color: "#eee8d5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc}</div>
-                            <div style={{ fontSize: 11, color: "#444", marginTop: 1 }}>{cat?.label} · {t.date}</div>
-                          </div>
-                          <div style={{ fontSize: 15, color: cat?.color, fontWeight: 600, flexShrink: 0 }}>{fmt(t.amount)}</div>
-                          <button className="pill" onClick={() => deleteTx(t.id)}
-                            style={{ background: "none", color: "#333", fontSize: 16, padding: "0 4px" }}>✕</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })
-            )}
-          </>
-        )}
-
-      </div>
-    </div>
-  );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+function getSpentBy() {
+  var byCat = emptyBudgets();
+  var byWeek = { 1: emptyBudgets(), 2: emptyBudgets(), 3: emptyBudgets(), 4: emptyBudgets() };
+  getMonthTx().forEach(function(t) {
+    byCat[t.category] += t.amount;
+    var day = new Date(t.date + "T00:00:00").getDate();
+    var wk = weekOf(day);
+    byWeek[wk][t.category] += t.amount;
+  });
+  return { byCat: byCat, byWeek: byWeek };
+}
+
+// ── Actions ────────────────────────────────────────────────
+function setView(v) { state.view = v; render(); }
+
+function prevMonth() {
+  if (state.month === 0) { state.year--; state.month = 11; }
+  else state.month--;
+  onMonthChange();
+}
+
+function nextMonth() {
+  if (state.month === 11) { state.year++; state.month = 0; }
+  else state.month++;
+  onMonthChange();
+}
+
+function onMonthChange() {
+  var mKey = monthKey(state.year, state.month);
+  state.budgetInput = Object.assign({}, state.budgetsByMonth[mKey] || emptyBudgets());
+  state.view = isBudgetSet() ? "weekly" : "plan";
+  render();
+}
+
+function updateBudgetInput(catId, value) {
+  state.budgetInput[catId] = value;
+  render();
+}
+
+function saveBudget() {
+  var parsed = {};
+  CATEGORIES.forEach(function(c) {
+    parsed[c.id] = parseFloat(state.budgetInput[c.id]) || 0;
+  });
+  var mKey = monthKey(state.year, state.month);
+  state.budgetsByMonth[mKey] = parsed;
+  persist();
+  state.view = "weekly";
+  render();
+}
+
+function updateForm(field, value) {
+  state.form[field] = value;
+  render();
+}
+
+function addTx() {
+  if (!state.form.amount || !state.form.desc) return;
+  state.transactions.unshift({
+    id: Date.now(),
+    category: state.form.category,
+    amount: parseFloat(state.form.amount),
+    desc: state.form.desc,
+    date: state.form.date
+  });
+  state.form.amount = "";
+  state.form.desc = "";
+  persist();
+  render();
+}
+
+function deleteTx(id) {
+  state.transactions = state.transactions.filter(function(t) { return t.id !== id; });
+  persist();
+  render();
+}
+
+function setActiveWeek(w) { state.activeWeek = w; render(); }
+
+// ── Render ─────────────────────────────────────────────────
+function esc(s) {
+  var d = document.createElement("div");
+  d.textContent = s == null ? "" : s;
+  return d.innerHTML;
+}
+
+function render() {
+  var app = document.getElementById("app");
+  var budgets = getBudgets();
+  var totalBudget = CATEGORIES.reduce(function(a, c) { return a + budgets[c.id]; }, 0);
+  var weeks = weeksInMonth(state.year, state.month);
+  var spentBy = getSpentBy();
+  var totalSpent = CATEGORIES.reduce(function(a, c) { return a + spentBy.byCat[c.id]; }, 0);
+  var monthTx = getMonthTx();
+
+  var html = "";
+
+  // Header
+  html += '<div class="header">';
+  html += '  <div class="month-row">';
+  html += '    <button class="month-btn" onclick="prevMonth()">\u2039</button>';
+  html += '    <div class="month-title"><div class="month-name">' + MONTH_NAMES[state.month] + '</div>';
+  html += '      <div class="month-year">' + state.year + '</div></div>';
+  html += '    <button class="month-btn" onclick="nextMonth()">\u203a</button>';
+  html += '  </div>';
+  html += '  <div class="navbar">';
+  [["plan","\ud83d\udccb Plan"],["weekly","\ud83d\udcc5 Weekly"],["log","\ud83d\udcb8 Expenses"]].forEach(function(pair) {
+    var active = state.view === pair[0] ? " active" : "";
+    html += '<button class="nav-btn' + active + '" onclick="setView(\'' + pair[0] + '\')">' + pair[1] + '</button>';
+  });
+  html += '  </div></div>';
+
+  html += '<div class="content">';
+
+  // PLAN VIEW
+  if (state.view === "plan") {
+    html += '<div class="section-label">SET YOUR MONTHLY BUDGET</div>';
+    html += '<div class="helper-text">Enter your total budget for each category for <b style="color:#eee8d5">' +
+      MONTH_NAMES[state.month] + ' ' + state.year + '</b>. The system auto-splits into 4 weeks for you.</div>';
+
+    CATEGORIES.forEach(function(cat) {
+      var val = state.budgetInput[cat.id] || "";
+      html += '<div class="card cat-row">';
+      html += '  <span class="cat-icon">' + cat.icon + '</span>';
+      html += '  <div style="flex:1">';
+      html += '    <div class="cat-name">' + cat.label + '</div>';
+      html += '    <div class="inp-group"><span class="rupee">\u20b9</span>';
+      html += '      <input class="inp" type="number" inputmode="decimal" placeholder="0" value="' + esc(val) + '" ' +
+               'oninput="updateBudgetInput(\'' + cat.id + '\', this.value)" /></div>';
+      html += '  </div></div>';
+    });
+
+    var totalInput = CATEGORIES.reduce(function(a, c) { return a + (parseFloat(state.budgetInput[c.id]) || 0); }, 0);
+    html += '<div class="total-row"><span class="total-label">TOTAL MONTHLY BUDGET</span>';
+    html += '<span class="total-value">' + fmt(totalInput) + '</span></div>';
+    html += '<button class="btn-primary" onclick="saveBudget()">\u2705 CONFIRM BUDGET & SEE WEEKLY PLAN</button>';
+  }
+
+  // WEEKLY VIEW
+  if (state.view === "weekly") {
+    if (!isBudgetSet()) {
+      html += '<div class="empty-state"><div class="empty-icon">\ud83d\udccb</div>';
+      html += '<div>Please set your monthly budget first</div>';
+      html += '<button class="btn-secondary" onclick="setView(\'plan\')">Go to Plan</button></div>';
+    } else {
+      var pct = totalBudget > 0 ? Math.min(totalSpent / totalBudget * 100, 100) : 0;
+      html += '<div class="card summary-card">';
+      html += '  <div class="summary-grid"><div><div class="summary-sub">MONTH BUDGET</div>';
+      html += '    <div class="summary-big">' + fmt(totalBudget) + '</div></div>';
+      html += '  <div style="text-align:right"><div class="summary-sub">SPENT SO FAR</div>';
+      html += '    <div class="summary-big" style="color:' + (totalSpent > totalBudget ? '#E84747' : '#eee8d5') + '">' + fmt(totalSpent) + '</div></div></div>';
+      html += '  <div class="progress-track"><div class="progress-fill" style="width:' + pct + '%;background:' +
+               (totalSpent > totalBudget ? '#E84747' : '#F4A261') + '"></div></div>';
+      html += '  <div class="remaining-note">' + fmt(totalBudget - totalSpent) + ' remaining</div></div>';
+
+      html += '<div class="week-tabs">';
+      weeks.forEach(function(w) {
+        var wSpent = CATEGORIES.reduce(function(a, c) { return a + spentBy.byWeek[w.week][c.id]; }, 0);
+        var wAllow = totalBudget / 4;
+        var over = wSpent > wAllow;
+        var cls = "week-tab" + (state.activeWeek === w.week ? " active" : "") + (over && state.activeWeek !== w.week ? " over" : "");
+        html += '<div class="' + cls + '" onclick="setActiveWeek(' + w.week + ')">';
+        html += '  <div>' + w.label + '</div><div class="range">' + w.range + '</div>';
+        if (over) html += '<div class="over-label" style="color:' + (state.activeWeek === w.week ? '#c0392b' : '#E84747') + '">OVER</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      var wAllowMap = {};
+      CATEGORIES.forEach(function(c) { wAllowMap[c.id] = budgets[c.id] / 4; });
+      var wSpentMap = spentBy.byWeek[state.activeWeek];
+      var wTotal = CATEGORIES.reduce(function(a, c) { return a + wAllowMap[c.id]; }, 0);
+      var wTotalSpent = CATEGORIES.reduce(function(a, c) { return a + wSpentMap[c.id]; }, 0);
+
+      html += '<div class="week-header"><span class="section-label">WEEK ' + state.activeWeek + ' ALLOWANCE</span>';
+      html += '<span class="week-alloc">' + fmt(wTotal) + '</span></div>';
+
+      CATEGORIES.forEach(function(cat) {
+        var allow = wAllowMap[cat.id];
+        var spent = wSpentMap[cat.id];
+        var p = allow > 0 ? Math.min(spent / allow, 1) * 100 : 0;
+        var over = spent > allow;
+        html += '<div class="card cat-card">';
+        html += '  <div class="cat-card-top"><div class="cat-card-left"><span>' + cat.icon + '</span>';
+        html += '    <span style="font-size:13px;color:#eee8d5">' + cat.label + '</span></div>';
+        html += '  <div style="text-align:right"><span class="cat-spent" style="color:' + (over ? '#E84747' : cat.color) + '">' + fmt(spent) + '</span>';
+        html += '  <span class="cat-budget"> / ' + fmt(allow) + '</span></div></div>';
+        html += '  <div class="mini-track"><div class="mini-fill" style="width:' + p + '%;background:' + (over ? '#E84747' : cat.color) + '"></div></div>';
+        if (over) html += '<div class="over-note">\u26a0 Over by ' + fmt(spent - allow) + '</div>';
+        html += '</div>';
+      });
+
+      html += '<div class="week-balance"><span style="font-size:12px;color:' + (wTotalSpent > wTotal ? '#E84747' : '#888') + '">';
+      html += (wTotalSpent > wTotal ? '\u26a0 Over this week by ' + fmt(wTotalSpent - wTotal) : 'Week balance: ' + fmt(wTotal - wTotalSpent));
+      html += '</span></div>';
+    }
+  }
+
+  // LOG VIEW
+  if (state.view === "log") {
+    html += '<div class="card">';
+    html += '  <div class="section-label" style="margin-bottom:14px">LOG AN EXPENSE</div>';
+    html += '  <div style="display:flex;flex-direction:column;gap:10px">';
+    html += '    <select class="inp-full" style="padding:10px 14px;font-size:14px;color:#eee8d5;background:#1a1d27" onchange="updateForm(\'category\', this.value)">';
+    CATEGORIES.forEach(function(c) {
+      var sel = state.form.category === c.id ? " selected" : "";
+      html += '<option value="' + c.id + '"' + sel + '>' + c.icon + ' ' + c.label + '</option>';
+    });
+    html += '    </select>';
+    html += '    <div class="inp-group"><span class="rupee">\u20b9</span>';
+    html += '      <input class="inp" type="number" inputmode="decimal" placeholder="Amount" value="' + esc(state.form.amount) + '" oninput="updateForm(\'amount\', this.value)" /></div>';
+    html += '    <input class="inp-full" style="padding:10px 14px;font-size:14px;background:#1a1d27;color:#eee8d5" type="text" placeholder="Description (e.g. BigBasket order)" value="' + esc(state.form.desc) + '" oninput="updateForm(\'desc\', this.value)" onkeydown="if(event.key===\'Enter\') addTx()" />';
+    html += '    <input class="inp-full" style="padding:10px 14px;font-size:14px;background:#1a1d27;color:#eee8d5" type="date" value="' + state.form.date + '" onchange="updateForm(\'date\', this.value)" />';
+    html += '    <button class="btn-primary" onclick="addTx()">+ ADD EXPENSE</button>';
+    html += '  </div></div>';
+
+    html += '<div class="reminder-box">\ud83d\udd14 <b style="color:#57CC99">Reminder set</b> \u2014 every Sunday at 7:00 PM, update your expenses here.</div>';
+
+    if (monthTx.length === 0) {
+      html += '<div class="no-tx">No expenses logged for ' + MONTH_NAMES[state.month] + ' yet</div>';
+    } else {
+      weeks.forEach(function(w) {
+        var wTx = monthTx.filter(function(t) { return weekOf(new Date(t.date + "T00:00:00").getDate()) === w.week; });
+        if (wTx.length === 0) return;
+        var wTotal = wTx.reduce(function(a, t) { return a + t.amount; }, 0);
+        html += '<div><div class="week-group-header"><span class="week-group-label">' + w.label.toUpperCase() + ' (' + w.range + ')</span>';
+        html += '<span class="week-group-total">' + fmt(wTotal) + '</span></div>';
+        wTx.forEach(function(t) {
+          var cat = CATEGORIES.find(function(c) { return c.id === t.category; });
+          html += '<div class="tx-row"><span class="tx-icon">' + (cat ? cat.icon : "") + '</span>';
+          html += '  <div class="tx-info"><div class="tx-desc">' + esc(t.desc) + '</div>';
+          html += '  <div class="tx-meta">' + (cat ? cat.label : "") + ' \u00b7 ' + t.date + '</div></div>';
+          html += '  <div class="tx-amount" style="color:' + (cat ? cat.color : '#888') + '">' + fmt(t.amount) + '</div>';
+          html += '  <button class="tx-delete" onclick="deleteTx(' + t.id + ')">\u2715</button></div>';
+        });
+        html += '</div>';
+      });
+    }
+  }
+
+  html += '</div>';
+  app.innerHTML = html;
+}
+
+render();
 </script>
 </body>
 </html>
